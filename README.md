@@ -81,11 +81,4 @@ El código está modularizado usando librerías propias en la carpeta `lib/` par
 
 ## 👥 Equipo de Trabajo
 
-*   Integrante 1 - Legajo
-*   Integrante 2 - Legajo
-*   Integrante 3 - Legajo
-*   Integrante 4 - Legajo
-*   Integrante 5 - Legajo
-*   Integrante 6 - Legajo
-
-*(Completar con los datos reales del grupo antes de la entrega)*
+[FALTA COMPLETAR]
