@@ -1,15 +1,18 @@
 #include <Arduino.h>
 #include <Device.h>
 #include <Cloud.h>
+#include <Bot.h>
 
 Device device;
 QueueHandle_t readings,commands;
 void networkTask(void*) {
   Cloud cloud;cloud.begin();
+  Bot bot(commands,cloud);bot.begin();
   Reading latest;
   for(;;) {
     xQueuePeek(readings,&latest,0);
     if(cloud.connected()) {
+      bot.tick(latest);
       int result=cloud.tick(latest);
       (void)result;
     }
