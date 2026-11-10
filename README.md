@@ -49,6 +49,7 @@ Por seguridad, las claves de red y de las APIs **no se suben al repositorio**.
 ### 3. Ejecución
 *   **En Simulador:** Ejecutar el comando `Wokwi: Start Simulator` desde la paleta de comandos (`F1`).
 *   **En Placa Física:** Conectar la placa por USB y ejecutar `pio run -t upload` en la terminal de PlatformIO.
+*   **Monitor serial:** Abrir el monitor serial de PlatformIO a **115200 baudios** para ver los mensajes de estado y errores.
 
 ---
 
