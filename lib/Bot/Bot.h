@@ -3,6 +3,7 @@
 #include <UniversalTelegramBot.h>
 #include <time.h>
 #include <Cloud.h>
+
 class Bot {
   WiFiClientSecure client;
   UniversalTelegramBot bot{BOT_TOKEN,client};
@@ -22,13 +23,21 @@ class Bot {
     int space=text.indexOf(' '),at=text.indexOf('@');
     if(at>=0 && (space<0 || at<space)) text.remove(at,(space<0?text.length():space)-at);
     if(text=="/start") {
-      String keyboard=R"json([[{"text":"Ver clima","callback_data":"/clima"}]])json";
+      String keyboard=R"json([[{"text":"Ver clima","callback_data":"/clima"}],[{"text":"Encender 10 s","callback_data":"/releon 10"},{"text":"Apagar","callback_data":"/releoff"}]])json";
       bot.sendMessageWithInlineKeyboard(ALLOWED_CHAT_ID,"TPI02: elegi una accion.","",keyboard);
     } else if(text=="/clima") {
       if(!r.valid) reply("DHT22: todavia no hay una lectura valida.");
       else reply("Temperatura: "+String(r.temperature,1)+" C\nHumedad: "+String(r.humidity,1)+
         " %\nEdad de lectura: "+String(uint32_t(millis()-r.sampleAt)/1000)+" s"+
         (elapsed(millis(),r.sampleAt,10000)?"\nAVISO: datos antiguos":""));
+    }
+    else if(text=="/releoff") {
+      if(enqueue(text)) reply("Apagado solicitado.");
+    } else if(text.startsWith("/releon")) {
+      uint32_t seconds=0;
+      if(!text.startsWith("/releon ") || !parseSeconds(text.substring(8).c_str(),seconds,MAX_RELAY_SECONDS))
+        reply("Uso: /releon N, con N entero entre 1 y 3600 segundos. Apagar: /releoff.");
+      else if(enqueue(text)) reply("Encendido solicitado por "+String(seconds)+" s.");
     }
 
     else reply("Comando desconocido. Usa /start.");
