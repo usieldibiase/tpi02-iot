@@ -3,7 +3,6 @@
 #include <UniversalTelegramBot.h>
 #include <time.h>
 #include <Cloud.h>
-
 class Bot {
   WiFiClientSecure client;
   UniversalTelegramBot bot{BOT_TOKEN,client};
@@ -23,7 +22,7 @@ class Bot {
     int space=text.indexOf(' '),at=text.indexOf('@');
     if(at>=0 && (space<0 || at<space)) text.remove(at,(space<0?text.length():space)-at);
     if(text=="/start") {
-      String keyboard=R"json([[{"text":"Ver clima","callback_data":"/clima"}],[{"text":"Encender 10 s","callback_data":"/releon 10"},{"text":"Apagar","callback_data":"/releoff"}]])json";
+      String keyboard=R"json([[{"text":"Ver clima","callback_data":"/clima"}],[{"text":"Encender 10 s","callback_data":"/releon 10"},{"text":"Apagar","callback_data":"/releoff"}],[{"text":"Subir voltaje","callback_data":"/thingup"}],[{"text":"Display LED","callback_data":"/displayled"},{"text":"Display pot","callback_data":"/displaypot"},{"text":"Display clima","callback_data":"/displaydht22"}]])json";
       bot.sendMessageWithInlineKeyboard(ALLOWED_CHAT_ID,"TPI02: elegi una accion.","",keyboard);
     } else if(text=="/clima") {
       if(!r.valid) reply("DHT22: todavia no hay una lectura valida.");
@@ -38,6 +37,15 @@ class Bot {
       if(!text.startsWith("/releon ") || !parseSeconds(text.substring(8).c_str(),seconds,MAX_RELAY_SECONDS))
         reply("Uso: /releon N, con N entero entre 1 y 3600 segundos. Apagar: /releoff.");
       else if(enqueue(text)) reply("Encendido solicitado por "+String(seconds)+" s.");
+    }
+    else if(text=="/thingup") {
+      if(cloud.pendingVoltage) reply("Ya hay un envio pendiente; espera su confirmacion.");
+      else {
+        cloud.requestedVoltage=r.voltage;cloud.pendingVoltage=true;waitingUpload=true;
+        reply("Voltaje "+String(r.voltage,3)+" V en cola. Se enviara respetando el intervalo de 20 s.");
+      }
+    } else if(text.startsWith("/display")) {
+      if(enqueue(text)) reply("Solicitud enviada al OLED. Los subcomandos desconocidos se informan en pantalla.");
     }
 
     else reply("Comando desconocido. Usa /start.");
@@ -61,7 +69,16 @@ public:
       if(m.type=="callback_query") bot.answerCallbackQuery(m.query_id);
       handle(m.text,r);
     }
-
+    if(r.alarmCount!=deliveredAlarm && elapsed(millis(),alertAt,30000)) {
+      alertAt=millis();
+      if(bot.sendMessage(ALLOWED_CHAT_ID,"ALERTA: voltaje supero "+String(ALERT_HIGH,2)+
+          " V. Valor detectado: "+String(r.eventVoltage,2)+" V. Eventos acumulados: "+
+          String(r.alarmCount-deliveredAlarm),"")) deliveredAlarm=r.alarmCount;
+    }
   }
-
+  void uploadResult(int result) {
+    if(!waitingUpload || result==0) return;
+    if(result==1) {reply("ThingSpeak confirmo el envio del voltaje.");waitingUpload=false;}
+    else reply("ThingSpeak no confirmo. Se reintentara despues de 20 s.");
+  }
 };

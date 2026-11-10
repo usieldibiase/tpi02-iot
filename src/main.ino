@@ -14,7 +14,7 @@ void networkTask(void*) {
     if(cloud.connected()) {
       bot.tick(latest);
       int result=cloud.tick(latest);
-      (void)result;
+      bot.uploadResult(result);
     }
     vTaskDelay(pdMS_TO_TICKS(20));
   }
@@ -29,7 +29,7 @@ void setup() {
   }
 }
 void loop() {
-  device.tick(WiFi.status()==WL_CONNECTED,false);
+  device.tick(WiFi.status()==WL_CONNECTED,true);
   Command command;
   if(xQueueReceive(commands,&command,0)==pdTRUE) device.command(String(command.text));
   Reading latest=device.read();xQueueOverwrite(readings,&latest);
