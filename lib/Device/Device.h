@@ -2,25 +2,30 @@
 #include <Arduino.h>
 #include <DHT.h>
 #include <Wire.h>
-#include <Adafruit_SSD1306.h>
+#include <Adafruit_SH110X.h>
 #include <Control.h>
 #include "config.h"
+
 struct Reading {
   float temperature=0,humidity=0,voltage=0,eventVoltage=0;
   uint32_t sampleAt=0,alarmCount=0;
   bool valid=false,relay=false;
 };
+
 struct Command { char text[96]; };
+
 class Device {
   DHT dht{DHT_PIN,DHT22};
-  Adafruit_SSD1306 oled{128,64,&Wire,-1};
+  Adafruit_SH1106G oled{128, 64, &Wire, -1};
   RelayTimer timer;
   AlarmLatch alarm;
   Reading state;
   uint32_t sensorAt=0,potAt=0,screenAt=0;
   String screen="clima";
   bool oledOK=false;
+
   void output() { digitalWrite(ACT_PIN,timer.on==ACT_ACTIVE_HIGH ? HIGH:LOW); state.relay=timer.on; }
+
 public:
   void begin() {
     pinMode(ACT_PIN,OUTPUT); output();
@@ -28,11 +33,13 @@ public:
     analogReadResolution(12); analogSetPinAttenuation(POT_PIN,ADC_11db);
     dht.begin(); Wire.begin(SDA_PIN,SCL_PIN);
     Wire.setTimeOut(50);
-    oledOK=oled.begin(SSD1306_SWITCHCAPVCC,OLED_ADDR);
+    oledOK=oled.begin(OLED_ADDR, true);
     if(!oledOK) Serial.println("ERROR OLED: revisar cableado/direccion");
     sensorAt=millis();
   }
+
   Reading read() const {return state;}
+
   void command(const String& text) {
     if(text=="/releoff") {timer.stop(); output();}
     else if(text.startsWith("/releon ")) {
@@ -49,6 +56,7 @@ public:
     }
     screenAt=millis()-500;
   }
+
   void tick(bool wifi,bool enableAlarm) {
     uint32_t now=millis();
     if(timer.tick(now)) {output(); Serial.println("Actuador: apagado automatico");}
@@ -66,7 +74,7 @@ public:
       else Serial.println("DHT22: lectura invalida; conservando ultima valida");
     }
     if(oledOK && elapsed(now,screenAt,500)) {
-      screenAt=now; oled.clearDisplay();oled.setTextSize(1);oled.setTextColor(SSD1306_WHITE);oled.setCursor(0,0);
+      screenAt=now; oled.clearDisplay();oled.setTextSize(1);oled.setTextColor(SH110X_WHITE);oled.setCursor(0,0);
       oled.println("TPI02 - ESP32");oled.println(wifi?"WiFi: conectado":"WiFi: desconectado");oled.println();
       if(screen=="led") oled.println(state.relay?"Led encendido":"Led apagado");
       else if(screen=="pot") {oled.print("Voltaje: ");oled.print(state.voltage,2);oled.println(" V");}

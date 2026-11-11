@@ -11,15 +11,23 @@ public:
   bool pendingVoltage=false;
   float requestedVoltage=0;
   void begin() {
-    WiFi.mode(WIFI_STA);WiFi.setAutoReconnect(true);WiFi.begin(WIFI_SSID,WIFI_PASSWORD);
+    WiFi. disconnect(true);
+    WiFi.mode(WIFI_STA);
+    WiFi.setAutoReconnect(true);
+    Serial.printf("\nConectando a WiFi: %s...\n", WIFI_SSID);
+    WiFi.begin(WIFI_SSID,WIFI_PASSWORD);
     wifiAt=millis();
   }
   bool connected() {
     if(WiFi.status()==WL_CONNECTED) return true;
-    if(elapsed(millis(),wifiAt,10000)) {wifiAt=millis();WiFi.reconnect();}
+    if(elapsed(millis(),wifiAt,10000)) {
+      wifiAt=millis();
+      Serial.printf("Reintentando WiFi (estado=%d)...\n", WiFi.status());
+      WiFi.disconnect();
+      WiFi.begin(WIFI_SSID,WIFI_PASSWORD);
+    }
     return false;
   }
-  // Returns 1=accepted, -1=failed, 0=waiting. All writes share one interval.
   int tick(const Reading& r) {
     if(!connected()) return 0;
     if(attempted && !elapsed(millis(),writeAt,CLOUD_MS)) return 0;
